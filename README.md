@@ -1,3 +1,44 @@
+# fp16 inference for OpenFlamingo
+This adds the following arguments to `open_flamingo.create_model_and_transforms`:
+```diff
+@@ -28,13 +41,19 @@ def create_model_and_transforms(
+         cross_attn_every_n_layers (int, optional): determines how often to add a cross-attention layer. Defaults to 1.
+         use_local_files (bool, optional): whether to use local files. Defaults to False.
+         decoder_layers_attr_name (str, optional): name of the decoder layers attribute. Defaults to None.
++        inference (bool, optional): whether to use inference mode. Defaults to False.
++        precision (str, optional): precision to use. Defaults to "fp32".
++        device (str, optional): device to use. Defaults to "cpu".
++        checkpoint_path (str, optional): path to flamingo checkpoint. Defaults to None.
++
+```
+To load the Flamingo-9B model on a 3090, run the following function call:
+```python
+from open_flamingo import create_model_and_transforms
+from huggingface_hub import hf_hub_download
+
+llama_path = # "/path/to/llama-7b-hf"
+
+model, image_processor, tokenizer = create_model_and_transforms(
+    clip_vision_encoder_path="ViT-L-14",
+    clip_vision_encoder_pretrained="openai",
+    lang_encoder_path=llama_path,
+    tokenizer_path=llama_path,
+    cross_attn_every_n_layers=4,
+    # new params
+    inference=True,
+    precision='fp16',
+    device='cuda',
+    checkpoint_path=hf_hub_download("openflamingo/OpenFlamingo-9B", "checkpoint.pt"),
+)
+```
+
+## Can the vram be reduced?
+Not very easily.
+
+In particular, it is difficult to load the LLaMA model in 8bit, because accelerate destroys the injected cross attention layers in LLaMA when `device_map=` is used.
+
+---
+
 # 🦩 OpenFlamingo
 
 [![PyPI version](https://badge.fury.io/py/open_flamingo.svg)](https://badge.fury.io/py/open_flamingo)
